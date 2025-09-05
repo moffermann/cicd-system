@@ -7,14 +7,30 @@
 
 const notifier = require('node-notifier');
 const path = require('path');
+const WhatsAppBusinessAPI = require('./WhatsAppBusinessAPI.cjs');
 
 class NotificationManager {
   constructor() {
     this.notifications = {
       windows: process.env.ENABLE_WINDOWS_NOTIFICATIONS !== 'false',
       console: true,
-      webhook: process.env.NOTIFICATION_WEBHOOK_URL || null
+      webhook: process.env.NOTIFICATION_WEBHOOK_URL || null,
+      whatsapp: {
+        enabled: !!(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER),
+        phoneNumber: process.env.WHATSAPP_PHONE_NUMBER
+      }
     };
+
+    // Initialize WhatsApp Business API if enabled
+    if (this.notifications.whatsapp.enabled) {
+      try {
+        this.whatsappAPI = new WhatsAppBusinessAPI();
+        console.log('✅ WhatsApp Business API initialized');
+      } catch (error) {
+        console.error('❌ Failed to initialize WhatsApp Business API:', error.message);
+        this.notifications.whatsapp.enabled = false;
+      }
+    }
   }
 
   /**
@@ -22,13 +38,16 @@ class NotificationManager {
    */
   async deploymentStarted(deployment) {
     const title = `🚀 Deployment Started`;
-    const message = `Project: ${deployment.project}\nCommit: ${deployment.commit}\nBranch: ${deployment.branch}`;
+    const githubUrl = deployment.githubUrl || `https://github.com/${deployment.repo || 'owner/repo'}/commit/${deployment.commit}`;
+    const logsUrl = deployment.logsUrl || `https://github.com/${deployment.repo || 'owner/repo'}/actions`;
+    
+    const message = `🚀 Starting deployment...\n\nProject: ${deployment.project}\nCommit: ${deployment.commit}\nBranch: ${deployment.branch}\n\n📋 FOLLOW PROGRESS:\n${logsUrl}\n\n🔗 Commit: ${githubUrl}`;
     
     await this.send({
       title,
       message,
       type: 'info',
-      deployment
+      deployment: { ...deployment, githubUrl, logsUrl }
     });
   }
 
@@ -37,13 +56,16 @@ class NotificationManager {
    */
   async deploymentSuccess(deployment) {
     const title = `✅ Deployment Success`;
-    const message = `Project: ${deployment.project}\nCommit: ${deployment.commit}\nDuration: ${deployment.duration || 'N/A'}`;
+    const githubUrl = deployment.githubUrl || `https://github.com/${deployment.repo || 'owner/repo'}/commit/${deployment.commit}`;
+    const productionUrl = deployment.productionUrl || process.env.PRODUCTION_URL;
+    
+    const message = `🎉 Deployed successfully in ${deployment.duration || 'N/A'}!\n\nProject: ${deployment.project}\nCommit: ${deployment.commit}\n\n🌐 VIEW LIVE SITE:\n${productionUrl}\n\n🔗 Commit: ${githubUrl}`;
     
     await this.send({
       title,
       message,
       type: 'success',
-      deployment
+      deployment: { ...deployment, githubUrl, productionUrl }
     });
   }
 
@@ -52,13 +74,16 @@ class NotificationManager {
    */
   async deploymentFailed(deployment) {
     const title = `❌ Deployment Failed`;
-    const message = `Project: ${deployment.project}\nCommit: ${deployment.commit}\nError: ${deployment.error || 'Unknown error'}`;
+    const githubUrl = deployment.githubUrl || `https://github.com/${deployment.repo || 'owner/repo'}/commit/${deployment.commit}`;
+    const logsUrl = deployment.logsUrl || `https://github.com/${deployment.repo || 'owner/repo'}/actions`;
+    
+    const message = `🚨 ${deployment.error || 'Unknown error'}\n\nProject: ${deployment.project}\nCommit: ${deployment.commit}\n\n📋 VIEW LOGS:\n${logsUrl}\n\n🔗 Commit: ${githubUrl}`;
     
     await this.send({
       title,
       message,
       type: 'error',
-      deployment
+      deployment: { ...deployment, githubUrl, logsUrl }
     });
   }
 
@@ -67,13 +92,16 @@ class NotificationManager {
    */
   async deploymentWarning(deployment) {
     const title = `⚠️ Deployment Warning`;
-    const message = `Project: ${deployment.project}\nCommit: ${deployment.commit}\nWarning: ${deployment.warning}`;
+    const githubUrl = deployment.githubUrl || `https://github.com/${deployment.repo || 'owner/repo'}/commit/${deployment.commit}`;
+    const logsUrl = deployment.logsUrl || `https://github.com/${deployment.repo || 'owner/repo'}/actions`;
+    
+    const message = `⚠️ ${deployment.warning || 'Warning detected'}\n\nProject: ${deployment.project}\nCommit: ${deployment.commit}\n\n📋 CHECK DETAILS:\n${logsUrl}\n\n🔗 Commit: ${githubUrl}`;
     
     await this.send({
       title,
       message,
       type: 'warning',
-      deployment
+      deployment: { ...deployment, githubUrl, logsUrl }
     });
   }
 
@@ -90,12 +118,17 @@ class NotificationManager {
 
     // Windows notification
     if (this.notifications.windows && process.platform === 'win32') {
-      promises.push(this.sendWindows({ title, message, type }));
+      promises.push(this.sendWindows({ title, message, type, deployment }));
     }
 
     // Webhook notification
     if (this.notifications.webhook) {
       promises.push(this.sendWebhook({ title, message, type, deployment }));
+    }
+
+    // WhatsApp notification
+    if (this.notifications.whatsapp.enabled) {
+      promises.push(this.sendWhatsApp({ title, message, type, deployment }));
     }
 
     // Wait for all notifications to complete
@@ -124,17 +157,26 @@ class NotificationManager {
   /**
    * Send Windows notification
    */
-  async sendWindows({ title, message, type }) {
+  async sendWindows({ title, message, type, deployment }) {
     try {
       return new Promise((resolve) => {
-        notifier.notify({
+        // Extraer URL principal para hacer clickeable
+        const mainUrl = this.extractMainUrl(deployment, type);
+        
+        const notificationConfig = {
           title: title,
           message: message,
           icon: this.getIcon(type),
-          sound: type === 'error' ? 'Basso' : 'Hero',
-          timeout: 10,
-          appID: 'CICD-System'
-        }, (err, response, metadata) => {
+          sound: type === 'error' ? 'Pop' : 'Hero',
+          timeout: 20, // Más tiempo para leer el link
+          appID: 'CICD-System',
+          // HIGH PRIORITY para superar modo concentración  
+          urgency: 'critical',
+          priority: 'high',
+          category: 'device'
+        };
+
+        notifier.notify(notificationConfig, (err, response, metadata) => {
           if (err) {
             console.error('Windows notification failed:', err);
             resolve({ success: false, channel: 'windows', error: err });
@@ -179,6 +221,77 @@ class NotificationManager {
   }
 
   /**
+   * Send WhatsApp notification with template using Business API
+   */
+  async sendWhatsApp({ title, message, type, deployment }) {
+    try {
+      if (!this.notifications.whatsapp.enabled || !this.whatsappAPI) {
+        console.log('⚠️ WhatsApp notifications disabled (no token/phone configured)');
+        return { success: false, channel: 'whatsapp', error: 'Not configured' };
+      }
+
+      const templateName = this.getWhatsAppTemplate(type);
+      const templateParams = this.getWhatsAppTemplateParams(deployment, type);
+      
+      try {
+        // Intentar primero con template
+        const result = await this.whatsappAPI.sendTemplate(
+          this.notifications.whatsapp.phoneNumber,
+          templateName,
+          'es', // language
+          templateParams
+        );
+
+        console.log('📱 WhatsApp template message sent successfully:', result.messageId);
+        return { success: true, channel: 'whatsapp', method: 'template', messageId: result.messageId };
+
+      } catch (templateError) {
+        console.log('⚠️ WhatsApp template failed, using fallback text message');
+        
+        // Fallback a mensaje de texto
+        const fallbackMessage = `${title}\n\n${message}\n\n📊 Proyecto: ${deployment?.project}\n🔗 Commit: ${deployment?.commit}\n🌿 Branch: ${deployment?.branch}`;
+        
+        const result = await this.whatsappAPI.sendMessage(
+          this.notifications.whatsapp.phoneNumber,
+          fallbackMessage
+        );
+
+        console.log('📱 WhatsApp fallback message sent successfully:', result.messageId);
+        return { success: true, channel: 'whatsapp', method: 'fallback', messageId: result.messageId };
+      }
+
+    } catch (error) {
+      console.error('📱❌ WhatsApp notification failed:', error.message);
+      return { success: false, channel: 'whatsapp', error: error.message };
+    }
+  }
+
+  /**
+   * Get WhatsApp template name based on notification type
+   */
+  getWhatsAppTemplate(type) {
+    const templates = {
+      success: 'cicd_deployment_success',
+      error: 'cicd_deployment_failed',
+      warning: 'cicd_deployment_warning',
+      info: 'cicd_deployment_started'
+    };
+    return templates[type] || 'cicd_general_notification';
+  }
+
+  /**
+   * Get WhatsApp template parameters
+   */
+  getWhatsAppTemplateParams(deployment, type) {
+    return [
+      deployment?.project || 'Unknown',
+      deployment?.commit || 'Unknown', 
+      deployment?.branch || 'Unknown',
+      new Date().toLocaleString('es-ES')
+    ];
+  }
+
+  /**
    * Get emoji for notification type
    */
   getEmoji(type) {
@@ -203,6 +316,27 @@ class NotificationManager {
       warning: path.join(__dirname, '..', '..', 'assets', 'warning.ico')
     };
     return icons[type] || null;
+  }
+
+  /**
+   * Extract main URL for clickeable notifications
+   */
+  extractMainUrl(deployment, type) {
+    if (!deployment) return null;
+    
+    switch (type) {
+      case 'success':
+        // SUCCESS: abrir sitio en vivo
+        return deployment.productionUrl || process.env.PRODUCTION_URL;
+      case 'error':
+        // ERROR: abrir logs para investigar
+        return deployment.logsUrl || `https://github.com/${deployment.repo || 'owner/repo'}/actions`;
+      case 'warning':
+      case 'info':
+      default:
+        // DEFAULT: abrir commit en GitHub
+        return deployment.githubUrl || `https://github.com/${deployment.repo || 'owner/repo'}/commit/${deployment.commit}`;
+    }
   }
 
   /**

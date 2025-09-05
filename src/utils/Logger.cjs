@@ -26,7 +26,13 @@ class Logger {
 
   info(message) { this.log(`ℹ️ ${message}`, 'blue'); }
   warn(message) { this.log(`⚠️ ${message}`, 'yellow'); }
-  error(message) { this.log(`❌ ${message}`, 'red'); }
+  error(message) { 
+    // Handle objects properly
+    if (typeof message === 'object') {
+      message = JSON.stringify(message, null, 2);
+    }
+    this.log(`❌ ${message}`, 'red'); 
+  }
   success(message) { this.log(`✅ ${message}`, 'green'); }
   debug(message) { this.log(`🐛 ${message}`, 'cyan'); }
 }
