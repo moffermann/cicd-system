@@ -1,0 +1,27 @@
+{
+  "name": "cicd-system",
+  "version": "1.0.0",
+  "description": "Standalone CI/CD system with webhook server, deployment scripts, and notification system for automated development workflows",
+  "type": "module",
+  "main": "src/webhook-server.js",
+  "scripts": {
+    "start": "node src/webhook-server.js",
+    "deploy": "node src/deploy-production.js",
+    "test": "node tests/test-all.js",
+    "health-check": "node src/claude-startup-checklist-complete.js",
+    "pid-manager": "node src/pid-manager.js",
+    "diagnose": "node src/diagnose-database.js",
+    "fix-schema": "node src/fix-database-schema.js"
+  },
+  "keywords": ["ci-cd", "webhook", "deployment", "automation", "ngrok"],
+  "author": "Talento Development Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2",
+    "node-notifier": "^10.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
