@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const path = require('path');
+const NotificationManager = require('../notifications/NotificationManager.cjs');
 
 /**
  * WebhookHandler - Handles GitHub webhook processing and deployment triggering
@@ -9,6 +10,7 @@ class WebhookHandler {
   constructor(database, logger) {
     this.db = database;
     this.logger = logger;
+    this.notifications = new NotificationManager();
   }
 
   /**

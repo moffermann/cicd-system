@@ -138,7 +138,6 @@ class ProjectConfig {
             'WEBHOOK_SECRET': 'webhookSecret',
             'MAIN_BRANCH': 'mainBranch',
             'NODE_ENV': 'environment',
-            'NGROK_AUTHTOKEN': 'ngrokToken'
         };
         
         for (const [envVar, configKey] of Object.entries(envMapping)) {
@@ -187,7 +186,6 @@ class ProjectConfig {
             healthCheckInterval: 30000, // 30 seconds
             deploymentTimeout: 600000,  // 10 minutes
             webhookSecret: null,
-            ngrokToken: null
         };
 
         const finalConfig = { ...defaults, ...config };

@@ -1,0 +1,36 @@
+<service>
+	<id>cicdsshtunnel.exe</id>
+	<name>CICD-SSH-Tunnel</name>
+	<description>CI/CD SSH Tunnel Service - Maintains persistent tunnel to gocode.cl for webhook notifications</description>
+	<executable>C:\Program Files\nodejs\node.exe</executable>
+	<argument>--max_old_space_size=1024</argument>
+	<argument>D:\devel\node\cicd-system\node_modules\node-windows\lib\wrapper.js</argument>
+	<argument>--file</argument>
+	<argument>D:\devel\node\cicd-system\scripts\ssh-tunnel-service-wrapper.cjs</argument>
+	<argument>--scriptoptions=</argument>
+	<argument>--log</argument>
+	<argument>CICD-SSH-Tunnel wrapper</argument>
+	<argument>--grow</argument>
+	<argument>0.25</argument>
+	<argument>--wait</argument>
+	<argument>1</argument>
+	<argument>--maxrestarts</argument>
+	<argument>3</argument>
+	<argument>--abortonerror</argument>
+	<argument>n</argument>
+	<argument>--stopparentfirst</argument>
+	<argument>undefined</argument>
+	<logmode>rotate</logmode>
+	<stoptimeout>30sec</stoptimeout>
+	<env name="TUNNEL_PORT" value="9001"/>
+	<env name="LOCAL_PORT" value="8765"/>
+	<env name="REMOTE_HOST" value="ubuntu@gocode.cl"/>
+	<env name="SSH_KEY_PATH" value="C:\Users\Mauro\.ssh\id_rsa"/>
+	<env name="CHECK_INTERVAL" value="30"/>
+	<serviceaccount>
+		<domain>MAUROBOT</domain>
+		<user>LocalSystem</user>
+		<password></password>
+	</serviceaccount>
+	<workingdirectory>D:\devel\node\cicd-system</workingdirectory>
+</service>

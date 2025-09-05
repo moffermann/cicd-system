@@ -3,14 +3,13 @@
   "version": "1.0.0",
   "description": "Standalone CI/CD system with webhook server, deployment scripts, and notification system for automated development workflows",
   "type": "module",
-  "main": "src/webhook-server.js",
+  "main": "src/webhook-server-multi.js",
   "scripts": {
     "start": "node src/webhook-server-multi.js",
     "start:multi": "node src/webhook-server-multi.js",
-    "start:legacy": "node src/webhook-server.js",
     "start:service": "node scripts/install-windows-service.js",
     "deploy": "node scripts/deploy-cicd-system.cjs production",
-    "deploy:staging": "node scripts/deploy-cicd-system.cjs staging", 
+    "deploy:staging": "node scripts/deploy-cicd-system.cjs staging",
     "deploy:production": "node scripts/deploy-cicd-system.cjs production",
     "deploy:validate": "node scripts/deploy-cicd-system.cjs validate",
     "deploy:rollback": "node scripts/deploy-cicd-system.cjs rollback",
@@ -22,7 +21,7 @@
     "security-scan": "echo 'Security scan completed - no vulnerabilities found'",
     "test": "jest",
     "test:unit": "jest tests/unit",
-    "test:integration": "jest tests/integration", 
+    "test:integration": "jest tests/integration",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:legacy": "node tests/test-basic-functionality.js",
@@ -33,7 +32,11 @@
     "fix-schema": "node src/fix-database-schema.js",
     "service:install": "node scripts/install-windows-service.js",
     "service:uninstall": "node scripts/uninstall-windows-service.js",
-    "service:control": "scripts\\service-control.bat"
+    "service:control": "scripts\\service-control.bat",
+    "tunnel:install": "node scripts/install-ssh-tunnel-service.cjs",
+    "tunnel:uninstall": "node scripts/uninstall-ssh-tunnel-service.cjs",
+    "tunnel:start": "powershell -File scripts/start-ssh-tunnel-service.ps1",
+    "tunnel:monitor": "powershell -File scripts/keep-ssh-tunnel-alive.ps1"
   },
   "keywords": [
     "ci-cd",
@@ -45,9 +48,10 @@
   "author": "Talento Development Team",
   "license": "MIT",
   "dependencies": {
+    "axios": "^1.11.0",
     "better-sqlite3": "^12.2.0",
     "express": "^4.18.2",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.7.0",
     "node-notifier": "^10.0.1"
   },
   "engines": {
@@ -55,6 +59,7 @@
   },
   "devDependencies": {
     "jest": "^30.1.3",
+    "node-windows": "^1.0.0-beta.8",
     "supertest": "^7.1.4"
   }
 }

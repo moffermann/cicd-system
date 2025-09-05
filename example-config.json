@@ -1,0 +1,19 @@
+{
+  "adminToken": "your-secure-admin-token-here",
+  "port": 8765,
+  "enabledFeatures": {
+    "admin": true,
+    "monitoring": true,
+    "logging": true
+  },
+  "rateLimit": {
+    "windowMs": 900000,
+    "maxRequests": 100
+  },
+  "cors": {
+    "enabled": true,
+    "origins": [
+      "http://localhost:3000"
+    ]
+  }
+}

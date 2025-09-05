@@ -18,47 +18,79 @@ if %errorLevel% == 0 (
 :: Display menu
 :menu
 echo.
-echo [36m🔧 ===== CI/CD Webhook Server - Windows Service Control =====[0m
-echo [33m1.[0m Install Service (auto-start on boot)
-echo [33m2.[0m Uninstall Service (complete removal)
-echo [33m3.[0m Start Service
-echo [33m4.[0m Stop Service
-echo [33m5.[0m Restart Service
-echo [33m6.[0m Check Service Status
-echo [33m7.[0m View Service Logs
-echo [33m8.[0m Test Webhook URL
-echo [33m9.[0m Exit
+echo [36m🔧 ===== CI/CD System - Windows Service Control =====[0m
+echo [33m=== WEBHOOK SERVER ===[0m
+echo [33m1.[0m Install Webhook Service (auto-start on boot)
+echo [33m2.[0m Uninstall Webhook Service (complete removal)
+echo [33m3.[0m Start Webhook Service
+echo [33m4.[0m Stop Webhook Service
+echo [33m5.[0m Restart Webhook Service
+echo [33m6.[0m Check Webhook Service Status
+echo [33m=== SSH TUNNEL ===[0m
+echo [33m7.[0m Install SSH Tunnel Service (auto-start on boot)
+echo [33m8.[0m Uninstall SSH Tunnel Service (complete removal)
+echo [33m9.[0m Start SSH Tunnel Service
+echo [33m10.[0m Stop SSH Tunnel Service
+echo [33m11.[0m Check SSH Tunnel Status
+echo [33m=== SYSTEM ===[0m
+echo [33m12.[0m View Service Logs
+echo [33m13.[0m Test Complete System
+echo [33m14.[0m Exit
 echo [36m============================================================[0m
 echo.
-set /p choice="Enter your choice (1-9): "
+set /p choice="Enter your choice (1-14): "
 
-if "%choice%"=="1" goto install
-if "%choice%"=="2" goto uninstall
-if "%choice%"=="3" goto start
-if "%choice%"=="4" goto stop
-if "%choice%"=="5" goto restart
-if "%choice%"=="6" goto status
-if "%choice%"=="7" goto logs
-if "%choice%"=="8" goto test
-if "%choice%"=="9" goto exit
+if "%choice%"=="1" goto install_webhook
+if "%choice%"=="2" goto uninstall_webhook
+if "%choice%"=="3" goto start_webhook
+if "%choice%"=="4" goto stop_webhook
+if "%choice%"=="5" goto restart_webhook
+if "%choice%"=="6" goto status_webhook
+if "%choice%"=="7" goto install_tunnel
+if "%choice%"=="8" goto uninstall_tunnel
+if "%choice%"=="9" goto start_tunnel
+if "%choice%"=="10" goto stop_tunnel
+if "%choice%"=="11" goto status_tunnel
+if "%choice%"=="12" goto logs
+if "%choice%"=="13" goto test_system
+if "%choice%"=="14" goto exit
 goto menu
 
-:install
-echo [33m🔧 Installing Windows Service...[0m
+:install_webhook
+echo [33m🔧 Installing Webhook Windows Service...[0m
 cd /d "%~dp0\.."
 node scripts\install-windows-service.js
 echo.
-echo [32m✅ Service installation completed![0m
+echo [32m✅ Webhook service installation completed![0m
 echo [36m🔧 You can now manage the service via Windows Services (services.msc)[0m
 pause
 goto menu
 
-:uninstall
-echo [33m🗑️ Uninstalling Windows Service...[0m
+:install_tunnel
+echo [33m🔗 Installing SSH Tunnel Windows Service...[0m
+cd /d "%~dp0\.."
+node scripts\install-ssh-tunnel-service.cjs
+echo.
+echo [32m✅ SSH Tunnel service installation completed![0m
+echo [36m🔧 You can now manage the service via Windows Services (services.msc)[0m
+pause
+goto menu
+
+:uninstall_webhook
+echo [33m🗑️ Uninstalling Webhook Windows Service...[0m
 cd /d "%~dp0\.."
 node scripts\uninstall-windows-service.js
 echo.
-echo [32m✅ Service uninstallation completed![0m
+echo [32m✅ Webhook service uninstallation completed![0m
+pause
+goto menu
+
+:uninstall_tunnel
+echo [33m🗑️ Uninstalling SSH Tunnel Windows Service...[0m
+cd /d "%~dp0\.."
+node scripts\uninstall-ssh-tunnel-service.cjs
+echo.
+echo [32m✅ SSH Tunnel service uninstallation completed![0m
 pause
 goto menu
 
