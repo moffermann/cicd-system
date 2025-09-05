@@ -4,13 +4,14 @@ Standalone CI/CD system with webhook server, deployment scripts, and notificatio
 
 ## ✨ Features
 
-- 🔗 **Webhook Server** - GitHub webhook receiver with ngrok tunnel support
+- 🔗 **Webhook Server** - GitHub webhook receiver with multi-project support
 - 🚀 **Deployment Scripts** - Production deployment with health checks and rollback
 - 📊 **System Monitoring** - Health checks and startup validation
 - 🔧 **Process Management** - PID management and port conflict resolution
 - 📱 **Notifications** - WhatsApp and Windows notifications for deployment status
 - 🗃️ **Database Management** - Schema diagnostics and automated fixes
 - 🎯 **Cross-Platform** - Windows batch files and PowerShell scripts included
+- 🛠️ **Windows Service** - Auto-start webhook server as Windows service
 
 ## 🎯 Quick Start
 
@@ -18,8 +19,8 @@ Standalone CI/CD system with webhook server, deployment scripts, and notificatio
 
 - Node.js 18+ 
 - npm or yarn
-- ngrok account with authtoken
 - Git repository access
+- Administrator privileges (for Windows service installation)
 
 ### Installation
 
@@ -56,32 +57,78 @@ npm run deploy
 npm run pid-manager cleanup
 ```
 
+## 🛠️ Windows Service Installation
+
+For **automatic startup** and **persistent execution**:
+
+### Quick Setup
+```powershell
+# Run as Administrator
+scripts\service-control.bat
+# Select option 1 to install service
+```
+
+### Manual Installation  
+```powershell
+# As Administrator
+cd D:\devel\node\cicd-system
+node scripts\install-windows-service.js
+```
+
+### Service Management
+```powershell
+# Control panel
+scripts\service-control.bat
+
+# Windows commands
+sc start "CICD-Webhook-Server"    # Start
+sc stop "CICD-Webhook-Server"     # Stop  
+sc query "CICD-Webhook-Server"    # Status
+```
+
+### Verification
+```bash
+# Test webhook server
+curl http://localhost:8765/health
+
+# Expected response:
+# {"status":"ok","timestamp":"...","projects":2}
+```
+
+📋 **See [Windows Service Setup Guide](docs/WINDOWS-SERVICE-SETUP.md) for detailed instructions**
+
 ## 🏗️ Architecture
 
 ### Core Components
 
 ```
 src/
-├── webhook-server.js          # Main webhook receiver
+├── webhook-server-multi.js    # Multi-project webhook receiver
 ├── deploy-production.js       # Production deployment automation  
 ├── claude-startup-checklist-complete.js  # System health validation
 ├── pid-manager.js             # Process and port management
-└── diagnose-database.js       # Database diagnostics
+├── database/
+│   └── DatabaseManager.cjs    # SQLite database management
+└── webhook/
+    └── WebhookHandler.cjs     # GitHub webhook processing
 
 scripts/
+├── install-windows-service.js       # Windows service installer
+├── uninstall-windows-service.js     # Windows service uninstaller  
+├── service-control.bat              # Service management control panel
 ├── start-ssh-tunnel-service.ps1     # PowerShell SSH tunnel setup
 ├── keep-ssh-tunnel-alive.ps1        # SSH tunnel monitoring
-├── start-webhook-server.bat         # Windows webhook server startup
 └── auto-startup-claude.bat          # Complete system initialization
 ```
 
 ### Workflow
 
-1. **GitHub Push** → Triggers webhook
-2. **Local Webhook Server** → Receives notification via ngrok tunnel
-3. **Production Deploy** → Executes deployment with health checks
-4. **Health Monitoring** → Continuous system validation
-5. **Notifications** → Status updates via WhatsApp/Windows
+1. **GitHub Push** → Triggers webhook to `https://cicd.gocode.cl/webhook`
+2. **Remote Server** → Processes webhook and triggers deployment
+3. **Local Development** → Optional Windows service for local testing
+4. **Production Deploy** → Multi-phase deployment with validation
+5. **Health Monitoring** → Continuous system validation
+6. **Database Logging** → All deployments tracked in SQLite
 
 ## 🔧 Configuration
 
