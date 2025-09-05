@@ -1,0 +1,58 @@
+[Unit]
+Description=CI/CD Webhook Server - Multi-Project Deployment System
+Documentation=https://github.com/moffermann/cicd-system
+After=network.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/cicd-system
+
+# Node.js executable and script
+ExecStart=/usr/bin/node src/webhook-server-multi.js
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Environment variables
+Environment=NODE_ENV=production
+Environment=WEBHOOK_PORT=8765
+Environment=ENABLE_NGROK=false
+
+# Restart policy
+Restart=always
+RestartSec=10
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/cicd-system/data
+ReadWritePaths=/opt/cicd-system/logs
+ReadWritePaths=/tmp
+
+# Additional security
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cicd-webhook
+
+# Process management
+PIDFile=/var/run/cicd-webhook.pid
+
+[Install]
+WantedBy=multi-user.target
