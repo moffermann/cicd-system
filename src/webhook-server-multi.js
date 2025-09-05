@@ -19,8 +19,6 @@ class MultiProjectWebhookServer {
   constructor() {
     this.app = express();
     this.port = process.env.WEBHOOK_PORT || 8765;
-    this.ngrokProcess = null;
-    this.currentTunnel = null;
     this.configFile = path.join(__dirname, '..', 'webhook-config.json');
     this.db = null; // Database instance
     this.adminToken = null;
@@ -339,45 +337,6 @@ class MultiProjectWebhookServer {
     }
   }
 
-  async startNgrok() {
-    return new Promise((resolve, reject) => {
-      console.log('🚀 Starting ngrok tunnel...');
-      
-      const authToken = process.env.NGROK_AUTHTOKEN || 'your-ngrok-token';
-      this.ngrokProcess = spawn('ngrok', ['http', this.port, '--authtoken', authToken], {
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
-
-      this.ngrokProcess.stdout.on('data', (data) => {
-        const output = data.toString();
-        console.log('ngrok:', output.trim());
-        
-        const urlMatch = output.match(/https:\/\/[a-zA-Z0-9-]+\.ngrok-free\.app/);
-        if (urlMatch) {
-          this.currentTunnel = urlMatch[0];
-          console.log(`✅ Ngrok tunnel active: ${this.currentTunnel}`);
-          resolve(this.currentTunnel);
-        }
-      });
-
-      this.ngrokProcess.stderr.on('data', (data) => {
-        console.error('ngrok error:', data.toString());
-      });
-
-      this.ngrokProcess.on('close', (code) => {
-        console.log(`ngrok closed with code: ${code}`);
-        if (code !== 0) {
-          setTimeout(() => this.startNgrok(), 5000);
-        }
-      });
-
-      setTimeout(() => {
-        if (!this.currentTunnel) {
-          reject(new Error('Ngrok failed to start within 30 seconds'));
-        }
-      }, 30000);
-    });
-  }
 
   async start() {
     try {
@@ -390,18 +349,6 @@ class MultiProjectWebhookServer {
       const server = this.app.listen(this.port, () => {
         console.log(`✅ HTTP server started on port ${this.port}`);
       });
-      
-      // Start ngrok if enabled
-      if (process.env.ENABLE_NGROK !== 'false') {
-        try {
-          const tunnelUrl = await this.startNgrok();
-          console.log(`🔗 Public URL: ${tunnelUrl}`);
-          console.log(`🎯 Webhook endpoint: ${tunnelUrl}/webhook`);
-        } catch (error) {
-          console.warn('⚠️ Ngrok failed to start, continuing without public URL');
-          console.warn(error.message);
-        }
-      }
       
       // Display startup summary
       const projects = this.db.getAllProjects();
@@ -421,9 +368,6 @@ class MultiProjectWebhookServer {
       // Graceful shutdown
       process.on('SIGINT', () => {
         console.log('\n🛑 Shutting down Multi-Project Webhook Server...');
-        if (this.ngrokProcess) {
-          this.ngrokProcess.kill();
-        }
         if (this.db) {
           this.db.close();
         }
