@@ -9,6 +9,10 @@ import { exec } from 'child_process';
 import util from 'util';
 import fetch from 'node-fetch';
 import { readFileSync } from 'fs';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const ProjectConfig = require('./config/ProjectConfig.cjs');
 
 const execAsync = util.promisify(exec);
 
@@ -25,15 +29,17 @@ class CompleteStartupChecklist {
             maxScore: 0
         };
         
-        this.productionUrl = process.env.PRODUCTION_URL || 'https://tdbot.gocode.cl';
-        this.localWebhookPort = process.env.WEBHOOK_PORT || '8765';
-        this.githubRepo = process.env.GITHUB_REPO || 'moffermann/cicd-system';
+        this.config = null; // Will be loaded from ProjectConfig
     }
 
     async runChecklist() {
         console.log('🚀 CLAUDE STARTUP CHECKLIST COMPLETO - Verificando CI/CD...\n');
         
         try {
+            // Load project configuration first
+            this.config = await ProjectConfig.load();
+            console.log(`📁 Verificando proyecto: ${this.config.projectName}\n`);
+            
             // Core checks
             await this.checkWebhookRemote();
             await this.checkWebhookLocal();
@@ -62,7 +68,7 @@ class CompleteStartupChecklist {
         const details = {};
         
         try {
-            const response = await this.fetchWithTimeout(`${this.productionUrl}/health`, {
+            const response = await this.fetchWithTimeout(`${this.config.productionUrl}/health`, {
                 method: 'GET',
                 timeout: 10000
             });
@@ -93,7 +99,7 @@ class CompleteStartupChecklist {
         const details = {};
         
         try {
-            const response = await this.fetchWithTimeout(`http://localhost:${this.localWebhookPort}/health`, {
+            const response = await this.fetchWithTimeout(`http://localhost:${this.config.port}/health`, {
                 method: 'GET',
                 timeout: 5000
             });

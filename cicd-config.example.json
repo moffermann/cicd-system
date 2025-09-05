@@ -1,0 +1,12 @@
+{
+  "projectName": "my-project",
+  "productionUrl": "https://my-project.example.com",
+  "stagingUrl": "https://staging.my-project.example.com",
+  "githubRepo": "username/my-project",
+  "port": 3000,
+  "mainBranch": "main",
+  "webhookSecret": "your-webhook-secret-here",
+  "environment": "production",
+  "healthCheckInterval": 30000,
+  "deploymentTimeout": 600000
+}

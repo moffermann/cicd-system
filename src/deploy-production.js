@@ -6,27 +6,28 @@
  * Este script implementa el protocolo formal de deployment
  * con validaciones estrictas y rollback automático.
  * 
- * USAGE: npm run deploy
+ * USAGE: npm run deploy [--project=project-name]
  */
 
 import { execSync, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const ProjectConfig = require('./config/ProjectConfig.cjs');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 🎯 CONFIGURACIÓN DE DEPLOYMENT
-const CONFIG = {
+// 🎯 CONFIGURACIÓN DE DEPLOYMENT BASE
+const BASE_CONFIG = {
   HEALTH_CHECK_TIMEOUT: 30000,
   POST_DEPLOYMENT_MONITORING: 300000, // 5 minutos
   MAX_ERROR_RATE: 0.01, // 1%
   MAX_RESPONSE_TIME: 2000, // 2 segundos
   ROLLBACK_THRESHOLD: 5, // 5 errores consecutivos
-  
-  STAGING_URL: process.env.STAGING_URL || 'https://staging-tdbot.gocode.cl',
-  PRODUCTION_URL: process.env.PRODUCTION_URL || 'https://tdbot.gocode.cl',
   
   HEALTH_ENDPOINTS: [
     '/health',
@@ -34,6 +35,9 @@ const CONFIG = {
     '/admin/health'
   ]
 };
+
+// Will be merged with project config
+let CONFIG = {};
 
 // 🎨 COLORES PARA OUTPUT
 const colors = {
@@ -439,11 +443,28 @@ class ProductionDeployer {
 
 // 🎯 FUNCIÓN PRINCIPAL
 async function main() {
-  const deployer = new ProductionDeployer();
-  
   try {
-    console.log('\n🚀 INICIANDO PRODUCTION DEPLOYMENT');
+    // Load project configuration first
+    const projectConfig = await ProjectConfig.load();
+    
+    // Merge with base config
+    CONFIG = {
+      ...BASE_CONFIG,
+      STAGING_URL: projectConfig.stagingUrl || process.env.STAGING_URL || `https://staging-${projectConfig.projectName}.com`,
+      PRODUCTION_URL: projectConfig.productionUrl || process.env.PRODUCTION_URL,
+      PROJECT_NAME: projectConfig.projectName,
+      GITHUB_REPO: projectConfig.githubRepo,
+      DEPLOYMENT_TIMEOUT: projectConfig.deploymentTimeout || BASE_CONFIG.POST_DEPLOYMENT_MONITORING
+    };
+    
+    console.log(`\n🚀 INICIANDO PRODUCTION DEPLOYMENT - ${CONFIG.PROJECT_NAME}`);
     console.log('='.repeat(60));
+    console.log(`📁 Proyecto: ${CONFIG.PROJECT_NAME}`);
+    console.log(`🌐 Producción: ${CONFIG.PRODUCTION_URL}`);
+    console.log(`🧪 Staging: ${CONFIG.STAGING_URL}`);
+    console.log('='.repeat(60));
+    
+    const deployer = new ProductionDeployer();
     
     // Ejecutar todas las fases
     await deployer.preValidation();

@@ -6,6 +6,10 @@ import fetch from 'node-fetch';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const ProjectConfig = require('./config/ProjectConfig.cjs');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,22 +17,38 @@ const __dirname = path.dirname(__filename);
 class AutoWebhookServer {
   constructor() {
     this.app = express();
-    this.port = 8765; // Puerto fijo para el servidor local
+    this.port = null; // Will be set from config
     this.ngrokProcess = null;
     this.currentTunnel = null;
     this.configFile = path.join(__dirname, '..', 'webhook-config.json');
-    this.productionUrl = process.env.PRODUCTION_URL || 'https://tdbot.gocode.cl';
+    this.config = null; // Project configuration
     this.adminToken = null; // Se cargará del archivo de configuración
   }
 
   async loadConfig() {
     try {
+      // Load project configuration first
+      this.config = await ProjectConfig.load();
+      this.port = this.config.port || 8765;
+      
+      // Load webhook-specific configuration
       const config = await fs.readFile(this.configFile, 'utf8');
       const data = JSON.parse(config);
       this.adminToken = data.adminToken;
+      
       console.log('✅ Configuración cargada');
+      console.log(`📁 Proyecto: ${this.config.projectName}`);
+      console.log(`🌐 URL Producción: ${this.config.productionUrl}`);
+      console.log(`📦 Puerto: ${this.port}`);
+      
     } catch (error) {
-      console.log('⚠️  No se encontró configuración, necesitas configurar el token de admin');
+      if (error.message.includes('Required configuration field missing')) {
+        console.error('❌ Error de configuración del proyecto:', error.message);
+        console.log('💡 Verifica las variables de entorno o crea cicd-config.json');
+        process.exit(1);
+      }
+      
+      console.log('⚠️  No se encontró configuración de webhook, necesitas configurar el token de admin');
       console.log('📝 Crea el archivo webhook-config.json con: {"adminToken": "tu-token-jwt"}');
       process.exit(1);
     }
@@ -39,7 +59,8 @@ class AutoWebhookServer {
       console.log('🚀 Iniciando ngrok...');
       
       // Usar ngrok con authtoken para URL fija (requiere cuenta ngrok)
-      this.ngrokProcess = spawn('ngrok', ['http', this.port, '--authtoken', process.env.NGROK_AUTHTOKEN || 'your-ngrok-token'], {
+      const authToken = this.config.ngrokToken || process.env.NGROK_AUTHTOKEN || 'your-ngrok-token';
+      this.ngrokProcess = spawn('ngrok', ['http', this.port, '--authtoken', authToken], {
         stdio: ['pipe', 'pipe', 'pipe']
       });
 
@@ -81,7 +102,7 @@ class AutoWebhookServer {
     try {
       console.log(`🔧 Configurando webhook en producción: ${webhookUrl}`);
       
-      const response = await fetch(`${this.productionUrl}/api/ci/configure-webhook`, {
+      const response = await fetch(`${this.config.productionUrl}/api/ci/configure-webhook`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.adminToken}`,
