@@ -24,7 +24,8 @@ module.exports = {
     '!src/**/*.test.{js,cjs}',
     '!src/**/__tests__/**',
     '!**/node_modules/**',
-    '!**/coverage/**'
+    '!**/coverage/**',
+    '!**/test-scripts/**'
   ],
   
   coverageDirectory: 'coverage',
