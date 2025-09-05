@@ -28,6 +28,7 @@
     "test:notifications:basic": "node scripts/testing/test-notifications.cjs",
     "test:notifications:sounds": "node scripts/testing/test-error-sounds.cjs",
     "test:deployment": "node scripts/testing/test-deployment-flow.cjs",
+    "test:windows-service": "node scripts/testing/test-windows-service-complete.cjs",
     "configure": "node scripts/configure-notifications.cjs",
     "setup": "node scripts/configure-notifications.cjs",
     "test:legacy": "node tests/test-basic-functionality.js",

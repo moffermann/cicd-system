@@ -3,6 +3,7 @@
 /**
  * Dummy server for testing purposes
  * This script simulates a basic server that can be started and stopped
+ * Uses CommonJS for compatibility with Windows Service testing
  */
 
 const http = require('http');
