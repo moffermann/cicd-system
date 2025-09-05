@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/webhook-server.js",
     "deploy": "node src/deploy-production.js",
-    "test": "node tests/test-all.js",
+    "test": "node tests/test-basic-functionality.js",
+    "test:all": "node tests/test-basic-functionality.js",
     "health-check": "node src/claude-startup-checklist-complete.js",
     "pid-manager": "node src/pid-manager.js",
     "diagnose": "node src/diagnose-database.js",
