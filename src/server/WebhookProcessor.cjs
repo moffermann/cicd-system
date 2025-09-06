@@ -192,13 +192,13 @@ class WebhookProcessor {
 
             // Send notification if available
             if (this.notificationManager) {
-                await this.notificationManager.sendDeploymentNotification({
+                await this.notificationManager.deploymentStarted({
                     project: project.name,
-                    status: 'started',
                     trigger: context.trigger,
                     branch: context.branch,
                     commit: context.commit,
-                    deploymentId
+                    deploymentId,
+                    repo: project.github_repo
                 });
             }
 
@@ -248,11 +248,11 @@ class WebhookProcessor {
 
             // Send success notification
             if (this.notificationManager) {
-                await this.notificationManager.sendDeploymentNotification({
+                await this.notificationManager.deploymentSuccess({
                     project: project.name,
-                    status: 'success',
                     deploymentId,
-                    url: project.production_url
+                    url: project.production_url,
+                    repo: project.github_repo
                 });
             }
 
@@ -261,11 +261,11 @@ class WebhookProcessor {
 
             // Send failure notification
             if (this.notificationManager) {
-                await this.notificationManager.sendDeploymentNotification({
+                await this.notificationManager.deploymentFailed({
                     project: project.name,
-                    status: 'failed',
                     deploymentId,
-                    error: error.message
+                    error: error.message,
+                    repo: project.github_repo
                 });
             }
 
