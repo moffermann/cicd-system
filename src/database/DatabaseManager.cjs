@@ -204,10 +204,10 @@ class DatabaseManager {
             INSERT INTO deployments (
                 project_id, commit_hash, commit_message, branch, 
                 status, triggered_by
-            ) VALUES (?, ?, ?, ?, 'pending', ?)
+            ) VALUES (?, ?, ?, ?, ?, ?)
         `);
 
-        const result = stmt.run(projectId, commit_hash, commit_message, branch, triggered_by);
+        const result = stmt.run(projectId, commit_hash, commit_message, branch, 'pending', triggered_by);
         console.log(`🚀 Deployment ${result.lastInsertRowid} created for project ${projectId}`);
         return result.lastInsertRowid;
     }
