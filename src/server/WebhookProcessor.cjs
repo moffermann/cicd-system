@@ -178,15 +178,11 @@ class WebhookProcessor {
     async startDeployment(project, context) {
         try {
             // Create deployment record
-            const deploymentId = await this.db.createDeployment({
-                project_name: project.name,
-                trigger: context.trigger,
+            const deploymentId = await this.db.createDeployment(project.id, {
+                commit_hash: context.commit,
+                commit_message: context.message,
                 branch: context.branch,
-                commit: context.commit,
-                status: 'pending',
-                environment: project.environment || 'production',
-                triggered_by: context.author || 'webhook',
-                metadata: JSON.stringify(context)
+                triggered_by: 'webhook'
             });
 
             console.log(`🚀 Starting deployment ${deploymentId} for ${project.name}`);
